@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة إنشاء الأخبار</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light p-4">
+
+    <div class="container">
+
+        <div class="text-center mb-4">
+            <h1 class="fw-bold">منصة إنشاء الأخبار</h1>
+            <p class="text-muted">إدارة الأخبار بسهولة</p>
+        </div>
+
+        <!-- زر إضافة -->
+        <div class="d-flex justify-content-between mb-3">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newsModal">
+                إضافة خبر جديد
+            </button>
+
+            <input type="text" id="searchInput" class="form-control w-50"
+                placeholder="ابحث عن خبر...">
+        </div>
+
+        <!-- الكروت -->
+        <div class="row" id="cards"></div>
+
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="newsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة خبر جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">اليوم</label>
+                        <input type="text" id="dayInput" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">الموضوع</label>
+                        <input type="text" id="subjectInput" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">الوقت</label>
+                        <input type="text" id="timeInput" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">الصورة</label>
+                        <input type="file" id="imageInput" class="form-control" accept="image/*">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" id="saveNews" class="btn btn-primary">حفظ الخبر</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+        const cardsContainer = document.getElementById("cards");
+        const searchInput = document.getElementById("searchInput");
+
+        const dayInput = document.getElementById("dayInput");
+        const subjectInput = document.getElementById("subjectInput");
+        const timeInput = document.getElementById("timeInput");
+        const imageInput = document.getElementById("imageInput");
+        const saveBtn = document.getElementById("saveNews");
+
+        let data = JSON.parse(localStorage.getItem("news")) || [];
+
+        function saveToStorage() {
+            localStorage.setItem("news", JSON.stringify(data));
+        }
+
+        function loadSchedule(filteredData = data) {
+
+            cardsContainer.innerHTML = "";
+
+            if (filteredData.length === 0) {
+                cardsContainer.innerHTML =
+                    `<p class="text-center">لا يوجد نتائج</p>`;
+                return;
+            }
+
+            filteredData.forEach((row, index) => {
+                cardsContainer.innerHTML += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <img src="${row.image}" class="card-img-top"
+                                 style="height:200px;object-fit:cover;">
+                            <div class="card-body">
+                                <h5 class="card-title">${row.day}</h5>
+                                <p class="card-text">
+                                    <strong>الموضوع:</strong> ${row.subject}<br>
+                                    <strong>الوقت:</strong> ${row.time}
+                                </p>
+                                <button onclick="deleteRow(${index})"
+                                        class="btn btn-danger btn-sm">
+                                        حذف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteRow(index) {
+            data.splice(index, 1);
+            saveToStorage();
+            loadSchedule();
+        }
+
+        saveBtn.addEventListener("click", function () {
+
+            const day = dayInput.value.trim();
+            const subject = subjectInput.value.trim();
+            const time = timeInput.value.trim();
+            const file = imageInput.files[0];
+
+            if (!day || !subject || !time || !file) {
+                alert("يجب إدخال كل البيانات");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+
+                data.push({
+                    day,
+                    subject,
+                    time,
+                    image: e.target.result
+                });
+
+                saveToStorage();
+                loadSchedule();
+
+                dayInput.value = "";
+                subjectInput.value = "";
+                timeInput.value = "";
+                imageInput.value = "";
+
+                const modal = bootstrap.Modal.getInstance(
+                    document.getElementById('newsModal')
+                );
+                modal.hide();
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        searchInput.addEventListener("input", function () {
+
+            const searchValue = searchInput.value.toLowerCase();
+
+            const filtered = data.filter(item =>
+                item.day.toLowerCase().includes(searchValue) ||
+                item.subject.toLowerCase().includes(searchValue) ||
+                item.time.toLowerCase().includes(searchValue)
+            );
+
+            loadSchedule(filtered);
+        });
+
+        loadSchedule();
+
+    </script>
+
+</body>
+
+</html>
